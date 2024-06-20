@@ -7,6 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Formulario de Evaluación</title>
         <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
             body {
                 display: flex;
@@ -1281,206 +1282,342 @@
 </div>
 
 
-  <!-- Resumen -->
-  <div id="module-resumen" class="module-section">
-    <canvas id="resultChart" width="400" height="200"></canvas>
-    <h3 class="text-center">Resumen auditoria</h3>
+ <!-- Resumen -->
+ <div id="module-resumen" class="module-section">
+
     <h4 class="text-center">Promedio BPM: <span id="resumen-bpm">0%</span></h4>
     <h4 class="text-center">Promedio POES: <span id="resumen-poes">0%</span></h4>
     <h4 class="text-center">Promedio POE: <span id="resumen-poe">0%</span></h4>
     <h4 class="text-center">Promedio MA: <span id="resumen-ma">0%</span></h4>
     <h4 class="text-center">Promedio DOC: <span id="resumen-doc">0%</span></h4>
     <h4 class="text-center">Promedio General: <span id="promedio-general">0%</span></h4>
-    
+    <canvas id="resultChart" width="400" height="200"></canvas>
+
+    <div class="audit-summary">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>ASPECTOS EVALUADOS</th>
+                        <th>PONDERACIÓN (%)</th>
+                        <th>NOTA POR ITEM</th>
+                        <th>PUNTAJE POR ITEM</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-table-body">
+                    <tr>
+                        <td>1</td>
+                        <td>BPM INFRAESTRUCTURA Y REQUERIMIENTOS LEGALES</td>
+                        <td>4%</td>
+                        <td><span id="nota-infraestructura">0%</span></td>
+                        <td><span id="puntaje-infraestructura">0%</span></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>POES PROCEDIMIENTOS OP. DE SANITIZACION</td>
+                        <td>25%</td>
+                        <td><span id="nota-poes">0%</span></td>
+                        <td><span id="puntaje-poes">0%</span></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>POE PROCEDIMIENTOS OP. DEL PROCESO</td>
+                        <td>25%</td>
+                        <td><span id="nota-poe">0%</span></td>
+                        <td><span id="puntaje-poe">0%</span></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>MA MANEJO AMBIENTAL</td>
+                        <td>4%</td>
+                        <td><span id="nota-ma">0%</span></td>
+                        <td><span id="puntaje-ma">0%</span></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>DOC DOCUMENTACION</td>
+                        <td>10%</td>
+                        <td><span id="nota-doc">0%</span></td>
+                        <td><span id="puntaje-doc">0%</span></td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>TRAZ TRAZADORES DE POSIBLE BROTE ETA</td>
+                        <td>21%</td>
+                        <td><span id="nota-traz">0%</span></td>
+                        <td><span id="puntaje-traz">0%</span></td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>LUM LUMINOMETRIA</td>
+                        <td>10%</td>
+                        <td><span id="nota-lum">0%</span></td>
+                        <td><span id="puntaje-lum">0%</span></td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4">PROMEDIO FINAL PONDERADO</td>
+                        <td><span id="promedio-ponderado">0%</span></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
     <button class="btn btn-secondary btn-block" onclick="previousModule('resumen', 'doc')">Anterior</button>
 </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        calculateOverallAverages();
+document.addEventListener('DOMContentLoaded', function () {
+    calculateOverallAverages();
+});
+
+function getColorByPercentage(percentage) {
+    if (percentage >= 90) return 'green';
+    if (percentage >= 75) return 'yellow';
+    return 'red';
+}
+
+function getEvaluationText(percentage) {
+    if (percentage >= 90) return 'Cumple totalmente con el ítem evaluado';
+    if (percentage >= 75) return 'Cumple con observaciones';
+    if (percentage >= 50) return 'Parcialmente cumple con observaciones';
+    if (percentage >= 25) return 'No cumple más del 70%';
+    return 'No cumple con el ítem evaluado';
+}
+
+function getInterpretationText(percentage) {
+    if (percentage >= 90) return 'El Administrador debe mejorar las observaciones realizadas en los plazos definidos y debe enviar el plan de acción con evidencias, por correo.';
+    if (percentage >= 75) return 'El Administrador debe recibir el plan de acción del Coordinador de Calidad y/o Jefe de Calidad. Debe el Administrador enviar vía correo al Supervisor de alimentación.';
+    return 'El Supervisor de Alimentación que realice la auditoría debe: comunicar el resultado al Jefe de Campamento vía correo electrónico.';
+}
+
+function calculateAverage(module) {
+    const form = document.getElementById(`form-${module}`);
+    const selects = form.querySelectorAll('select');
+    let total = 0;
+    let count = 0;
+
+    selects.forEach(select => {
+        total += parseInt(select.value);
+        count++;
     });
 
-    function getColorByPercentage(percentage) {
-        if (percentage >= 90) return 'green';
-        if (percentage >= 75) return 'yellow';
-        return 'red';
+    const average = (total / count).toFixed(2);
+    document.getElementById(`average-${module}`).innerText = `${average}%`;
+    calculateOverallAverages();
+}
+
+function calculateOverallAverages() {
+    const bpmModules = ['infraestructura', 'legales'];
+    const poesModules = [
+        'poes-control-productos', 'poes-control-agua', 'poes-superficies', 'poes-contaminacion-cruzada',
+        'poes-sustancias-adulterantes', 'poes-higiene-empleados', 'poes-control-plagas', 'poes-instalaciones'
+    ];
+    const poeModules = [
+        'poe-recepcion', 'poe-almacenamiento', 'poe-preelaboraciones', 'poe-elaboracion', 'poe-mantencion',
+        'poe-transporte', 'poe-servicio', 'poe-lavado-ollas-vajilla', 'poe-control-calidad'
+    ];
+    const maModules = ['ma'];
+    const docModules = ['doc'];
+
+    let bpmTotal = 0, bpmCount = 0;
+    bpmModules.forEach(module => {
+        const averageText = document.getElementById(`average-${module}`).innerText;
+        const average = parseFloat(averageText.replace('%', ''));
+        if (!isNaN(average)) {
+            bpmTotal += average;
+            bpmCount++;
+        }
+    });
+    const bpmAverage = (bpmTotal / bpmCount).toFixed(2);
+    document.getElementById('resumen-bpm').innerText = `${bpmAverage}%`;
+    document.getElementById('resumen-bpm').style.color = getColorByPercentage(bpmAverage);
+
+    let poesTotal = 0, poesCount = 0;
+    poesModules.forEach(module => {
+        const averageText = document.getElementById(`average-${module}`).innerText;
+        const average = parseFloat(averageText.replace('%', ''));
+        if (!isNaN(average)) {
+            poesTotal += average;
+            poesCount++;
+        }
+    });
+    const poesAverage = (poesTotal / poesCount).toFixed(2);
+    document.getElementById('resumen-poes').innerText = `${poesAverage}%`;
+    document.getElementById('resumen-poes').style.color = getColorByPercentage(poesAverage);
+
+    let poeTotal = 0, poeCount = 0;
+    poeModules.forEach(module => {
+        const averageText = document.getElementById(`average-${module}`).innerText;
+        const average = parseFloat(averageText.replace('%', ''));
+        if (!isNaN(average)) {
+            poeTotal += average;
+            poeCount++;
+        }
+    });
+    const poeAverage = (poeTotal / poeCount).toFixed(2);
+    document.getElementById('resumen-poe').innerText = `${poeAverage}%`;
+    document.getElementById('resumen-poe').style.color = getColorByPercentage(poeAverage);
+
+    let maTotal = 0, maCount = 0;
+    maModules.forEach(module => {
+        const averageText = document.getElementById(`average-${module}`).innerText;
+        const average = parseFloat(averageText.replace('%', ''));
+        if (!isNaN(average)) {
+            maTotal += average;
+            maCount++;
+        }
+    });
+    const maAverage = (maTotal / maCount).toFixed(2);
+    document.getElementById('resumen-ma').innerText = `${maAverage}%`;
+    document.getElementById('resumen-ma').style.color = getColorByPercentage(maAverage);
+
+    let docTotal = 0, docCount = 0;
+    docModules.forEach(module => {
+        const averageText = document.getElementById(`average-${module}`).innerText;
+        const average = parseFloat(averageText.replace('%', ''));
+        if (!isNaN(average)) {
+            docTotal += average;
+            docCount++;
+        }
+    });
+    const docAverage = (docTotal / docCount).toFixed(2);
+    document.getElementById('resumen-doc').innerText = `${docAverage}%`;
+    document.getElementById('resumen-doc').style.color = getColorByPercentage(docAverage);
+
+    const overallTotal = bpmTotal + poesTotal + poeTotal + maTotal + docTotal;
+    const overallCount = bpmCount + poesCount + poeCount + maCount + docCount;
+    const overallAverage = (overallTotal / overallCount).toFixed(2);
+    document.getElementById('promedio-general').innerText = `${overallAverage}%`;
+    document.getElementById('promedio-general').style.color = getColorByPercentage(overallAverage);
+
+    updateAuditTable(bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage);
+    renderChart(bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage);
+}
+
+function updateAuditTable(bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage) {
+    const weights = {
+        infraestructura: 4,
+        poes: 25,
+        poe: 25,
+        ma: 4,
+        doc: 10,
+        traz: 21,
+        lum: 10
+    };
+
+    document.getElementById('nota-infraestructura').innerText = `${bpmAverage}%`;
+    document.getElementById('puntaje-infraestructura').innerText = `${(bpmAverage * weights.infraestructura / 100).toFixed(1)}%`;
+
+    document.getElementById('nota-poes').innerText = `${poesAverage}%`;
+    document.getElementById('puntaje-poes').innerText = `${(poesAverage * weights.poes / 100).toFixed(1)}%`;
+
+    document.getElementById('nota-poe').innerText = `${poeAverage}%`;
+    document.getElementById('puntaje-poe').innerText = `${(poeAverage * weights.poe / 100).toFixed(1)}%`;
+
+    document.getElementById('nota-ma').innerText = `${maAverage}%`;
+    document.getElementById('puntaje-ma').innerText = `${(maAverage * weights.ma / 100).toFixed(1)}%`;
+
+    document.getElementById('nota-doc').innerText = `${docAverage}%`;
+    document.getElementById('puntaje-doc').innerText = `${(docAverage * weights.doc / 100).toFixed(1)}%`;
+
+    const trazAverage = 61; // Fijo como en tu ejemplo
+    document.getElementById('nota-traz').innerText = `${trazAverage}%`;
+    document.getElementById('puntaje-traz').innerText = `${(trazAverage * weights.traz / 100).toFixed(1)}%`;
+
+    const lumAverage = 100; // Fijo como en tu ejemplo
+    document.getElementById('nota-lum').innerText = `${lumAverage}%`;
+    document.getElementById('puntaje-lum').innerText = `${(lumAverage * weights.lum / 100).toFixed(1)}%`;
+
+    const weightedAverage = (
+        (bpmAverage * weights.infraestructura) +
+        (poesAverage * weights.poes) +
+        (poeAverage * weights.poe) +
+        (maAverage * weights.ma) +
+        (docAverage * weights.doc) +
+        (trazAverage * weights.traz) +
+        (lumAverage * weights.lum)
+    ) / 100;
+
+    document.getElementById('promedio-ponderado').innerText = `${weightedAverage.toFixed(1)}%`;
+}
+
+function renderChart(bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage) {
+    const ctx = document.getElementById('resultChart').getContext('2d');
+    const data = {
+        labels: ['BPM', 'POES', 'POE', 'MA', 'DOC', 'General'],
+        datasets: [{
+            label: 'Porcentaje de Cumplimiento',
+            data: [bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage],
+            backgroundColor: [
+                getColorByPercentage(bpmAverage),
+                getColorByPercentage(poesAverage),
+                getColorByPercentage(poeAverage),
+                getColorByPercentage(maAverage),
+                getColorByPercentage(docAverage),
+                getColorByPercentage(overallAverage)
+            ]
+        }]
+    };
+    const options = {
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    };
+    if (window.resultChart instanceof Chart) {
+        window.resultChart.destroy();
     }
+    window.resultChart = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: options
+    });
+}
 
-    function calculateAverage(module) {
-        const form = document.getElementById(`form-${module}`);
-        const selects = form.querySelectorAll('select');
-        let total = 0;
-        let count = 0;
+function nextModule(currentModule, nextModule) {
+    document.getElementById(`module-${currentModule}`).classList.remove('active');
+    document.getElementById(`module-${nextModule}`).classList.add('active');
 
-        selects.forEach(select => {
-            total += parseInt(select.value);
-            count++;
-        });
-
-        const average = (total / count).toFixed(2);
-        document.getElementById(`average-${module}`).innerText = `${average}%`;
+    if (nextModule.startsWith('poes')) {
+        document.getElementById('module-title').innerText = 'POES - Procedimientos Operacionales Estandarizados de Saneamiento';
+    } else if (nextModule.startsWith('poe')) {
+        document.getElementById('module-title').innerText = 'POE - Procedimientos Operacionales Estandarizados';
+    } else if (nextModule === 'ma') {
+        document.getElementById('module-title').innerText = 'MA - Manejo y Protección Ambiental';
+    } else if (nextModule === 'doc') {
+        document.getElementById('module-title').innerText = 'DOC - Documentación';
+    } else if (nextModule === 'resumen') {
+        document.getElementById('module-title').innerText = 'Resumen auditoría';
         calculateOverallAverages();
+    } else {
+        document.getElementById('module-title').innerText = 'BPM - Buenas Prácticas de Manufactura';
     }
+}
 
-    function calculateOverallAverages() {
-        const bpmModules = ['infraestructura', 'legales'];
-        const poesModules = [
-            'poes-control-productos', 'poes-control-agua', 'poes-superficies', 'poes-contaminacion-cruzada',
-            'poes-sustancias-adulterantes', 'poes-higiene-empleados', 'poes-control-plagas', 'poes-instalaciones'
-        ];
-        const poeModules = [
-            'poe-recepcion', 'poe-almacenamiento', 'poe-preelaboraciones', 'poe-elaboracion', 'poe-mantencion',
-            'poe-transporte', 'poe-servicio', 'poe-lavado-ollas-vajilla', 'poe-control-calidad'
-        ];
-        const maModules = ['ma'];
-        const docModules = ['doc'];
+function previousModule(currentModule, previousModule) {
+    document.getElementById(`module-${currentModule}`).classList.remove('active');
+    document.getElementById(`module-${previousModule}`).classList.add('active');
 
-        let bpmTotal = 0, bpmCount = 0;
-        bpmModules.forEach(module => {
-            const averageText = document.getElementById(`average-${module}`).innerText;
-            const average = parseFloat(averageText.replace('%', ''));
-            if (!isNaN(average)) {
-                bpmTotal += average;
-                bpmCount++;
-            }
-        });
-        const bpmAverage = (bpmTotal / bpmCount).toFixed(2);
-        document.getElementById('resumen-bpm').innerText = `${bpmAverage}%`;
-        document.getElementById('resumen-bpm').style.color = getColorByPercentage(bpmAverage);
-
-        let poesTotal = 0, poesCount = 0;
-        poesModules.forEach(module => {
-            const averageText = document.getElementById(`average-${module}`).innerText;
-            const average = parseFloat(averageText.replace('%', ''));
-            if (!isNaN(average)) {
-                poesTotal += average;
-                poesCount++;
-            }
-        });
-        const poesAverage = (poesTotal / poesCount).toFixed(2);
-        document.getElementById('resumen-poes').innerText = `${poesAverage}%`;
-        document.getElementById('resumen-poes').style.color = getColorByPercentage(poesAverage);
-
-        let poeTotal = 0, poeCount = 0;
-        poeModules.forEach(module => {
-            const averageText = document.getElementById(`average-${module}`).innerText;
-            const average = parseFloat(averageText.replace('%', ''));
-            if (!isNaN(average)) {
-                poeTotal += average;
-                poeCount++;
-            }
-        });
-        const poeAverage = (poeTotal / poeCount).toFixed(2);
-        document.getElementById('resumen-poe').innerText = `${poeAverage}%`;
-        document.getElementById('resumen-poe').style.color = getColorByPercentage(poeAverage);
-
-        let maTotal = 0, maCount = 0;
-        maModules.forEach(module => {
-            const averageText = document.getElementById(`average-${module}`).innerText;
-            const average = parseFloat(averageText.replace('%', ''));
-            if (!isNaN(average)) {
-                maTotal += average;
-                maCount++;
-            }
-        });
-        const maAverage = (maTotal / maCount).toFixed(2);
-        document.getElementById('resumen-ma').innerText = `${maAverage}%`;
-        document.getElementById('resumen-ma').style.color = getColorByPercentage(maAverage);
-
-        let docTotal = 0, docCount = 0;
-        docModules.forEach(module => {
-            const averageText = document.getElementById(`average-${module}`).innerText;
-            const average = parseFloat(averageText.replace('%', ''));
-            if (!isNaN(average)) {
-                docTotal += average;
-                docCount++;
-            }
-        });
-        const docAverage = (docTotal / docCount).toFixed(2);
-        document.getElementById('resumen-doc').innerText = `${docAverage}%`;
-        document.getElementById('resumen-doc').style.color = getColorByPercentage(docAverage);
-
-        const overallTotal = bpmTotal + poesTotal + poeTotal + maTotal + docTotal;
-        const overallCount = bpmCount + poesCount + poeCount + maCount + docCount;
-        const overallAverage = (overallTotal / overallCount).toFixed(2);
-        document.getElementById('promedio-general').innerText = `${overallAverage}%`;
-        document.getElementById('promedio-general').style.color = getColorByPercentage(overallAverage);
-
-        renderChart(bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage);
+    if (previousModule.startsWith('poes')) {
+        document.getElementById('module-title').innerText = 'POES - Procedimientos Operacionales Estandarizados de Saneamiento';
+    } else if (previousModule.startsWith('poe')) {
+        document.getElementById('module-title').innerText = 'POE - Procedimientos Operacionales Estandarizados';
+    } else if (previousModule === 'ma') {
+        document.getElementById('module-title').innerText = 'MA - Manejo y Protección Ambiental';
+    } else if (previousModule === 'doc') {
+        document.getElementById('module-title').innerText = 'DOC - Documentación';
+    } else {
+        document.getElementById('module-title').innerText = 'BPM - Buenas Prácticas de Manufactura';
     }
+}
 
-    function renderChart(bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage) {
-        const ctx = document.getElementById('resultChart').getContext('2d');
-        const data = {
-            labels: ['BPM', 'POES', 'POE', 'MA', 'DOC', 'General'],
-            datasets: [{
-                label: 'Porcentaje de Cumplimiento',
-                data: [bpmAverage, poesAverage, poeAverage, maAverage, docAverage, overallAverage],
-                backgroundColor: [
-                    getColorByPercentage(bpmAverage),
-                    getColorByPercentage(poesAverage),
-                    getColorByPercentage(poeAverage),
-                    getColorByPercentage(maAverage),
-                    getColorByPercentage(docAverage),
-                    getColorByPercentage(overallAverage)
-                ]
-            }]
-        };
-        const options = {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            }
-        };
-        if (window.resultChart instanceof Chart) {
-            window.resultChart.destroy();
-        }
-        window.resultChart = new Chart(ctx, {
-            type: 'bar',
-            data: data,
-            options: options
-        });
-    }
-
-    function nextModule(currentModule, nextModule) {
-        document.getElementById(`module-${currentModule}`).classList.remove('active');
-        document.getElementById(`module-${nextModule}`).classList.add('active');
-
-        if (nextModule.startsWith('poes')) {
-            document.getElementById('module-title').innerText = 'POES - Procedimientos Operacionales Estandarizados de Saneamiento';
-        } else if (nextModule.startsWith('poe')) {
-            document.getElementById('module-title').innerText = 'POE - Procedimientos Operacionales Estandarizados';
-        } else if (nextModule === 'ma') {
-            document.getElementById('module-title').innerText = 'MA - Manejo y Protección Ambiental';
-        } else if (nextModule === 'doc') {
-            document.getElementById('module-title').innerText = 'DOC - Documentación';
-        } else if (nextModule === 'resumen') {
-            document.getElementById('module-title').innerText = 'Resumen auditoría';
-            calculateOverallAverages();
-        } else {
-            document.getElementById('module-title').innerText = 'BPM - Buenas Prácticas de Manufactura';
-        }
-    }
-
-    function previousModule(currentModule, previousModule) {
-        document.getElementById(`module-${currentModule}`).classList.remove('active');
-        document.getElementById(`module-${previousModule}`).classList.add('active');
-
-        if (previousModule.startsWith('poes')) {
-            document.getElementById('module-title').innerText = 'POES - Procedimientos Operacionales Estandarizados de Saneamiento';
-        } else if (previousModule.startsWith('poe')) {
-            document.getElementById('module-title').innerText = 'POE - Procedimientos Operacionales Estandarizados';
-        } else if (previousModule === 'ma') {
-            document.getElementById('module-title').innerText = 'MA - Manejo y Protección Ambiental';
-        } else if (previousModule === 'doc') {
-            document.getElementById('module-title').innerText = 'DOC - Documentación';
-        } else {
-            document.getElementById('module-title').innerText = 'BPM - Buenas Prácticas de Manufactura';
-        }
-    }
 </script>
 
 </body>
